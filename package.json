@@ -1,0 +1,59 @@
+{
+  "name": "deepseek-desktop",
+  "version": "0.1.0",
+  "description": "Cross-platform LAN folder sharing for Windows and macOS.",
+  "main": "src/main.js",
+  "type": "module",
+  "private": true,
+  "author": "long",
+  "scripts": {
+    "dev": "electron .",
+    "check": "find ./src -name '*.js' -print0 | xargs -0 -n1 node --check",
+    "build:mac": "electron-builder --mac dmg",
+    "build:win": "electron-builder --win nsis --x64"
+  },
+  "build": {
+    "appId": "com.long.deepseekdesktop",
+    "productName": "DeepSeek Desktop",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.developer-tools"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "${productName}-${version}-Windows-${arch}-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "dmg": {
+      "title": "DeepSeek Desktop"
+    }
+  },
+  "devDependencies": {
+    "electron": "^42.5.0",
+    "electron-builder": "^26.0.12"
+  },
+  "dependencies": {
+    "webdav-server": "^2.6.2"
+  }
+}

@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DeepSeek Desktop</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="share-shell">
+      <section class="share-section network-section">
+        <header class="section-head">
+          <div>
+            <span class="eyebrow">局域网</span>
+            <h1>共享电脑</h1>
+          </div>
+          <button id="refreshNetwork" class="text-button" type="button">刷新</button>
+        </header>
+
+        <div id="networkStatus" class="status-line">等待扫描</div>
+        <div id="networkShares" class="network-list"></div>
+
+        <details class="direct-connect">
+          <summary>通过 Windows IP 连接</summary>
+          <form id="directConnect">
+            <div class="connect-row">
+              <input
+                id="windowsHost"
+                name="windowsHost"
+                type="text"
+                inputmode="decimal"
+                autocomplete="off"
+                aria-label="Windows IP 地址"
+                placeholder="例如 192.168.1.20"
+              />
+              <input
+                id="remotePassword"
+                name="remotePassword"
+                type="password"
+                autocomplete="current-password"
+                aria-label="共享密码"
+                placeholder="共享密码"
+              />
+              <button id="connectButton" class="connect-button" type="submit">连接</button>
+            </div>
+          </form>
+        </details>
+      </section>
+
+      <div class="section-divider"></div>
+
+      <section class="share-section local-section">
+        <header class="section-head">
+          <div>
+            <span class="eyebrow">本机共享</span>
+            <div class="identity-row">
+              <h2 id="computerName">这台电脑</h2>
+              <button id="editComputerName" class="mini-button" type="button">编辑名称</button>
+            </div>
+          </div>
+          <div class="head-actions">
+            <button id="setSharePassword" class="mini-button" type="button">设置密码</button>
+            <button id="addShare" class="text-button" type="button">添加</button>
+          </div>
+        </header>
+
+        <div id="localStatus" class="status-line local-status">共享密码尚未设置</div>
+        <ul id="localShares" class="file-list">
+          <li class="empty">还没有共享文件夹</li>
+        </ul>
+      </section>
+    </main>
+
+    <menu id="folderMenu" class="context-menu">
+      <button id="unshareFolder" type="button">取消共享</button>
+    </menu>
+
+    <dialog id="passwordDialog" class="settings-dialog">
+      <form id="passwordForm" method="dialog">
+        <span class="eyebrow">安全配对</span>
+        <h2>设置共享密码</h2>
+        <p>其他电脑需要输入这个密码才能看到和挂载你的共享文件夹。</p>
+        <label for="newSharePassword">共享密码</label>
+        <input
+          id="newSharePassword"
+          type="password"
+          minlength="6"
+          autocomplete="new-password"
+          placeholder="至少 6 位"
+          required
+        />
+        <div id="passwordError" class="dialog-error"></div>
+        <div class="dialog-actions">
+          <button id="cancelPassword" class="mini-button" type="button">取消</button>
+          <button id="savePassword" class="connect-button" type="submit">保存密码</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="pairDialog" class="settings-dialog">
+      <form id="pairForm" method="dialog">
+        <span class="eyebrow">连接共享电脑</span>
+        <h2 id="pairDeviceName">输入共享密码</h2>
+        <p id="pairDeviceAddress"></p>
+        <label for="pairPassword">共享密码</label>
+        <input
+          id="pairPassword"
+          type="password"
+          autocomplete="current-password"
+          placeholder="输入对方设置的密码"
+          required
+        />
+        <div id="pairError" class="dialog-error"></div>
+        <div class="dialog-actions">
+          <button id="cancelPair" class="mini-button" type="button">取消</button>
+          <button id="confirmPair" class="connect-button" type="submit">配对</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
