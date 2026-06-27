@@ -1,4 +1,4 @@
-# DeepSeek Desktop
+# 握手 Handshake
 
 一个用于 Windows 和 macOS 的局域网文件夹共享应用，支持设备密码配对、
 文件上传下载、双向编辑，以及挂载到 Finder 或 Windows 文件资源管理器。
@@ -40,12 +40,12 @@ npm run build:win
 安装程序生成在 `dist/`，文件名类似：
 
 ```text
-DeepSeek Desktop-0.1.0-Windows-x64-Setup.exe
+握手-0.1.0-Windows-x64-Setup.exe
 ```
 
 ## 跨平台共享
 
-1. 两台电脑连接同一个局域网，并分别运行 Desktop Share。
+1. 两台电脑连接同一个局域网，并分别运行握手。
 2. 在共享端编辑电脑名称、设置至少 6 位共享密码，然后添加共享文件夹。
 3. 系统首次弹出防火墙提示时，允许应用访问“专用网络”。
 4. 在另一台电脑点击“刷新”，选择目标电脑并输入共享密码配对。

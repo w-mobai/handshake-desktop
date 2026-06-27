@@ -169,7 +169,7 @@ function renderNetworkDevices(devices) {
         item.append(button, detail);
         list.append(item);
       }
-    } else if (device.type === 'desktop-share') {
+    } else if (device.type === 'handshake') {
       const item = document.createElement('li');
       const button = document.createElement('button');
       const detail = document.createElement('span');

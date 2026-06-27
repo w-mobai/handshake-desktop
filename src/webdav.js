@@ -30,12 +30,12 @@ export async function startWebDav({ folders, password, port, pathModule, deviceN
     hostname: '0.0.0.0',
     port,
     requireAuthentification: true,
-    httpAuthentication: new webdav.HTTPDigestAuthentication(userManager, 'Desktop Share'),
+    httpAuthentication: new webdav.HTTPDigestAuthentication(userManager, 'Handshake'),
     privilegeManager,
-    serverName: 'Desktop Share'
+    serverName: 'Handshake'
   });
 
-  const mountName = String(deviceName || 'Desktop Share').replace(/[\\/]/g, '-');
+  const mountName = String(deviceName || 'Handshake').replace(/[\\/]/g, '-');
   const mountPath = `/${mountName}`;
   const names = uniqueMountNames(folders, pathModule);
   if (folders.length === 1) {

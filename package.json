@@ -1,5 +1,5 @@
 {
-  "name": "deepseek-desktop",
+  "name": "handshake-desktop",
   "version": "0.1.0",
   "description": "Cross-platform LAN folder sharing for Windows and macOS.",
   "main": "src/main.js",
@@ -13,8 +13,8 @@
     "build:win": "electron-builder --win nsis --x64"
   },
   "build": {
-    "appId": "com.long.deepseekdesktop",
-    "productName": "DeepSeek Desktop",
+    "appId": "com.long.handshake",
+    "productName": "握手",
     "directories": {
       "output": "dist"
     },
@@ -46,7 +46,7 @@
       "createStartMenuShortcut": true
     },
     "dmg": {
-      "title": "DeepSeek Desktop"
+      "title": "握手"
     }
   },
   "devDependencies": {

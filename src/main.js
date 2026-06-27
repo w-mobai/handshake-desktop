@@ -383,7 +383,7 @@ function requireAuthorization(req, res, password) {
   if (requestAuthorized(req, password)) return true;
   res.writeHead(401, {
     'content-type': 'text/plain; charset=utf-8',
-    'www-authenticate': 'Basic realm="Desktop Share"'
+    'www-authenticate': 'Basic realm="Handshake"'
   });
   res.end('需要输入共享密码。');
   return false;
@@ -435,8 +435,8 @@ async function handleShareRequest(req, res, root, config) {
       return `<li><a href="${item.urlPath}">[dir] ${escapeHtml(item.name)}</a><span class="muted">共享文件夹</span></li>`;
     });
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-    res.end(htmlPage('DeepSeek Desktop 文件共享', [
-      '<h1>DeepSeek Desktop 文件共享</h1>',
+    res.end(htmlPage('握手文件共享', [
+      '<h1>握手文件共享</h1>',
       `<ul>${rows.join('') || '<li><span class="muted">没有共享文件夹。</span></li>'}</ul>`
     ].join('')));
     return;
@@ -496,9 +496,9 @@ async function handleShareRequest(req, res, root, config) {
     }
 
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-    res.end(htmlPage('DeepSeek Desktop 文件共享', [
+    res.end(htmlPage('握手文件共享', [
       '<div class="page-head"><div>',
-      '<h1>DeepSeek Desktop 文件共享</h1>',
+      '<h1>握手文件共享</h1>',
       `<p class="muted">${escapeHtml(currentPath || '/')}</p></div>`,
       '<span class="muted">双向管理</span></div>',
       '<div class="toolbar">',
@@ -662,7 +662,7 @@ async function fetchAppShares(host, password = '', includeShares = false) {
 
   if (!includeShares) {
     return {
-      type: 'desktop-share',
+      type: 'handshake',
       name: device.name || host,
       host,
       paired: !device.passwordRequired,
@@ -678,7 +678,7 @@ async function fetchAppShares(host, password = '', includeShares = false) {
   if (data?.unauthorized) throw new Error('共享密码不正确');
   if (!data) return null;
   return {
-    type: 'desktop-share',
+    type: 'handshake',
     name: data.name || host,
     host,
     paired: true,
@@ -829,7 +829,7 @@ async function connectNetworkShare(value, password = '') {
 function createMenu() {
   const template = [
     {
-      label: process.platform === 'darwin' ? 'DeepSeek Desktop' : 'File',
+      label: process.platform === 'darwin' ? '握手' : 'File',
       submenu: [
         { role: 'about' },
         { type: 'separator' },
@@ -880,7 +880,7 @@ function createWindow() {
     height: 820,
     minWidth: 520,
     minHeight: 620,
-    title: 'DeepSeek Desktop',
+    title: '握手',
     backgroundColor: '#101114',
     ...(process.platform === 'darwin'
       ? {
