@@ -46,7 +46,7 @@ function normalizeConfig(config) {
   return {
     ...config,
     sharedFolders: [...new Set(sharedFolders.filter(Boolean).map(folder => path.resolve(folder)))],
-    hostName: String(config.hostName || os.hostname() || app.getName()).trim(),
+    hostName: os.hostname() || app.getName(),
     sharePasswordEncrypted: config.sharePasswordEncrypted || ''
   };
 }
@@ -908,14 +908,6 @@ ipcMain.handle('share:discover', () => discoverNetworkShares());
 ipcMain.handle('share:connect', (_event, host, password) => connectNetworkShare(host, password));
 ipcMain.handle('share:mount', (_event, host, password, mountPath) => mountNetworkShare(host, password, mountPath));
 ipcMain.handle('share:open', (_event, targetUrl) => shell.openExternal(targetUrl));
-
-ipcMain.handle('identity:set-name', async (_event, hostName) => {
-  const name = String(hostName || '').trim().slice(0, 64);
-  if (!name) throw new Error('电脑名称不能为空');
-  const config = await readConfig();
-  config.hostName = name;
-  return saveConfig(config);
-});
 
 ipcMain.handle('identity:set-password', async (_event, password) => {
   const value = String(password || '');

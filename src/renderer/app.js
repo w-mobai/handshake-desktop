@@ -19,7 +19,6 @@ const directConnect = document.querySelector('#directConnect');
 const windowsHost = document.querySelector('#windowsHost');
 const remotePassword = document.querySelector('#remotePassword');
 const connectButton = document.querySelector('#connectButton');
-const editComputerName = document.querySelector('#editComputerName');
 const setSharePassword = document.querySelector('#setSharePassword');
 const localStatus = document.querySelector('#localStatus');
 const passwordDialog = document.querySelector('#passwordDialog');
@@ -55,6 +54,16 @@ function folderButton(label) {
   text.textContent = label;
   button.append(icon, text);
   return button;
+}
+
+async function mountDevice(device) {
+  networkStatus.textContent = `正在挂载 ${device.name || device.host}...`;
+  try {
+    await window.deepseekDesktop.mountShare(device.host, device.password, device.webDavPath);
+    networkStatus.textContent = '已挂载到系统文件管理器';
+  } catch (error) {
+    networkStatus.textContent = `挂载失败：${error.message}`;
+  }
 }
 
 function localShareUrl(index) {
@@ -142,15 +151,7 @@ function renderNetworkDevices(devices) {
       mount.className = 'mini-button';
       mount.type = 'button';
       mount.textContent = '挂载';
-      mount.addEventListener('click', async () => {
-        networkStatus.textContent = `正在挂载 ${device.name || device.host}...`;
-        try {
-          await window.deepseekDesktop.mountShare(device.host, device.password, device.webDavPath);
-          networkStatus.textContent = '已挂载到系统文件管理器';
-        } catch (error) {
-          networkStatus.textContent = `挂载失败：${error.message}`;
-        }
-      });
+      mount.addEventListener('click', () => mountDevice(device));
       deviceActions.append(mount);
     }
 
@@ -163,9 +164,15 @@ function renderNetworkDevices(devices) {
         const button = folderButton(share.name);
         const detail = document.createElement('span');
 
-        button.addEventListener('click', () => window.deepseekDesktop.openShare(share.openUrl));
+        button.addEventListener('click', () => {
+          if (device.webDavAvailable) {
+            mountDevice(device);
+          } else {
+            window.deepseekDesktop.openShare(share.openUrl);
+          }
+        });
         detail.className = 'muted';
-        detail.textContent = '打开';
+        detail.textContent = device.webDavAvailable ? '挂载' : '网页打开';
         item.append(button, detail);
         list.append(item);
       }
@@ -276,17 +283,6 @@ directConnect.addEventListener('submit', async event => {
     networkStatus.textContent = error.message;
   } finally {
     connectButton.disabled = false;
-  }
-});
-
-editComputerName.addEventListener('click', async () => {
-  const name = prompt('输入这台电脑显示给其他设备的名称', state.config.hostName || '');
-  if (!name?.trim()) return;
-  try {
-    state.config = await window.deepseekDesktop.setComputerName(name);
-    await refreshStatus();
-  } catch (error) {
-    networkStatus.textContent = error.message;
   }
 });
 
