@@ -59,10 +59,24 @@ function folderButton(label) {
 async function mountDevice(device) {
   networkStatus.textContent = `正在挂载 ${device.name || device.host}...`;
   try {
-    await window.deepseekDesktop.mountShare(device.host, device.password, device.webDavPath);
-    networkStatus.textContent = '已挂载到系统文件管理器';
+    const result = await window.deepseekDesktop.mountShare(device.host, device.password, device.webDavPath);
+    device.mountedDrive = result.drive || '';
+    renderNetworkDevices(state.devices);
+    networkStatus.textContent = result.reused ? '已打开现有网络盘' : '已挂载到系统文件管理器';
   } catch (error) {
     networkStatus.textContent = `挂载失败：${error.message}`;
+  }
+}
+
+async function unmountDevice(device) {
+  networkStatus.textContent = `正在断开 ${device.name || device.host}...`;
+  try {
+    await window.deepseekDesktop.unmountShare(device.mountedDrive);
+    device.mountedDrive = '';
+    renderNetworkDevices(state.devices);
+    networkStatus.textContent = '网络盘已断开并移除';
+  } catch (error) {
+    networkStatus.textContent = `断开失败：${error.message}`;
   }
 }
 
@@ -153,6 +167,15 @@ function renderNetworkDevices(devices) {
       mount.textContent = '挂载';
       mount.addEventListener('click', () => mountDevice(device));
       deviceActions.append(mount);
+
+      if (device.mountedDrive) {
+        const unmount = document.createElement('button');
+        unmount.className = 'mini-button danger-button';
+        unmount.type = 'button';
+        unmount.textContent = '断开';
+        unmount.addEventListener('click', () => unmountDevice(device));
+        deviceActions.append(unmount);
+      }
     }
 
     head.append(title, deviceActions);

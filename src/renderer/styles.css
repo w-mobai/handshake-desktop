@@ -134,6 +134,15 @@ h3 {
   color: var(--accent);
 }
 
+.danger-button {
+  color: var(--danger);
+}
+
+.danger-button:hover {
+  color: var(--danger);
+  background: #fff0ee;
+}
+
 .text-button {
   min-height: 34px;
   padding: 0 10px;

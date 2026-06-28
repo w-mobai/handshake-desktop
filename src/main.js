@@ -768,6 +768,26 @@ function appleScriptString(value) {
   return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
+async function findWindowsWebDavDrive(host) {
+  const output = await runFile('net', ['use']).catch(() => '');
+  const markers = [
+    `${host}@${WEBDAV_PORT}`,
+    `http://${host}:${WEBDAV_PORT}`,
+    `https://${host}:${WEBDAV_PORT}`
+  ].map(value => value.toLocaleLowerCase());
+  const lines = output.split(/\r?\n/);
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const section = lines.slice(Math.max(0, index - 1), index + 2).join(' ');
+    const normalized = section.toLocaleLowerCase();
+    if (!markers.some(marker => normalized.includes(marker))) continue;
+    const drive = section.match(/\b([A-Z]:)\b/i)?.[1];
+    if (drive) return drive.toUpperCase();
+  }
+
+  return '';
+}
+
 async function mountNetworkShare(hostValue, password, mountPath = '') {
   const host = normalizeHost(hostValue);
   if (!host) throw new Error('需要有效的 IP 地址');
@@ -792,16 +812,30 @@ async function mountNetworkShare(hostValue, password, mountPath = '') {
   }
 
   if (process.platform === 'win32') {
+    const existingDrive = await findWindowsWebDavDrive(host);
+    if (existingDrive) {
+      await runFile('explorer.exe', [`${existingDrive}\\`]).catch(() => {});
+      return { url, mounted: true, drive: existingDrive, reused: true };
+    }
+
     const args = ['use', '*', url];
     if (password) args.push('/user:share', password);
-    args.push('/persistent:yes');
+    args.push('/persistent:no');
     const output = await runFile('net', args, 30000);
-    const drive = output.match(/\b([A-Z]:)\b/i)?.[1];
+    const drive = output.match(/\b([A-Z]:)\b/i)?.[1] || await findWindowsWebDavDrive(host);
     if (drive) await runFile('explorer.exe', [`${drive}\\`]).catch(() => {});
     return { url, mounted: true, drive };
   }
 
   throw new Error('当前系统暂不支持自动挂载');
+}
+
+async function unmountNetworkShare(drive) {
+  if (process.platform !== 'win32') throw new Error('当前仅支持从 Windows 客户端断开盘符');
+  const target = String(drive || '').trim().toUpperCase();
+  if (!/^[A-Z]:$/.test(target)) throw new Error('没有可断开的网络盘符');
+  await runFile('net', ['use', target, '/delete', '/y'], 15000);
+  return { unmounted: true, drive: target };
 }
 
 async function connectNetworkShare(value, password = '') {
@@ -905,6 +939,7 @@ ipcMain.handle('share:stop', () => stopShareServer());
 ipcMain.handle('share:discover', () => discoverNetworkShares());
 ipcMain.handle('share:connect', (_event, host, password) => connectNetworkShare(host, password));
 ipcMain.handle('share:mount', (_event, host, password, mountPath) => mountNetworkShare(host, password, mountPath));
+ipcMain.handle('share:unmount', (_event, drive) => unmountNetworkShare(drive));
 ipcMain.handle('share:open', (_event, targetUrl) => shell.openExternal(targetUrl));
 
 ipcMain.handle('identity:set-password', async (_event, password) => {

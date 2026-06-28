@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('deepseekDesktop', {
   discoverShares: () => ipcRenderer.invoke('share:discover'),
   connectShare: (host, password) => ipcRenderer.invoke('share:connect', host, password),
   mountShare: (host, password, mountPath) => ipcRenderer.invoke('share:mount', host, password, mountPath),
+  unmountShare: drive => ipcRenderer.invoke('share:unmount', drive),
   openShare: targetUrl => ipcRenderer.invoke('share:open', targetUrl),
   setSharePassword: password => ipcRenderer.invoke('identity:set-password', password)
 });
