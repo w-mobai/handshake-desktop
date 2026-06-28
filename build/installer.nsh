@@ -17,11 +17,15 @@
 
   ; 仅将三个标准私有局域网段加入“本地 Intranet”（区域编号 1）。
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Ranges\Handshake10" ":Range" "10.*"
-  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Ranges\Handshake10" "http" 1
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Ranges\Handshake10" "*" 1
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Ranges\Handshake172" ":Range" "172.16-31.*"
-  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Ranges\Handshake172" "http" 1
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Ranges\Handshake172" "*" 1
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Ranges\Handshake192" ":Range" "192.168.*"
-  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Ranges\Handshake192" "http" 1
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Ranges\Handshake192" "*" 1
+
+  ; Windows 会把带点的 IP/主机名当作 Internet；信任局域网 mDNS 的 .local 域。
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\local" "*" 1
+  WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\local" "*" 1
 
   ; 让新限制立即生效，并确保 WebDAV 客户端服务可用。
   nsExec::ExecToLog 'sc.exe config WebClient start= demand'
@@ -44,4 +48,6 @@
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Ranges\Handshake10"
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Ranges\Handshake172"
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Ranges\Handshake192"
+  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\local"
+  DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\local"
 !macroend

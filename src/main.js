@@ -768,35 +768,90 @@ function appleScriptString(value) {
   return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
-async function findWindowsWebDavDrive(host) {
-  const output = await runFile('net', ['use']).catch(() => '');
-  const markers = [
-    `${host}@${WEBDAV_PORT}`,
-    `http://${host}:${WEBDAV_PORT}`,
-    `https://${host}:${WEBDAV_PORT}`
-  ].map(value => value.toLocaleLowerCase());
-  const lines = output.split(/\r?\n/);
+async function listWindowsNetworkDrives() {
+  const command = [
+    '$items = Get-CimInstance Win32_LogicalDisk -Filter "DriveType=4"',
+    '$items | Select-Object DeviceID,ProviderName | ConvertTo-Json -Compress'
+  ].join('; ');
+  const output = await runFile('powershell.exe', [
+    '-NoProfile',
+    '-NonInteractive',
+    '-Command',
+    command
+  ]).catch(() => '');
+  if (!output.trim()) return [];
 
-  for (let index = 0; index < lines.length; index += 1) {
-    const section = lines.slice(Math.max(0, index - 1), index + 2).join(' ');
-    const normalized = section.toLocaleLowerCase();
-    if (!markers.some(marker => normalized.includes(marker))) continue;
-    const drive = section.match(/\b([A-Z]:)\b/i)?.[1];
-    if (drive) return drive.toUpperCase();
+  try {
+    const parsed = JSON.parse(output.replace(/^\uFEFF/, '').trim());
+    return (Array.isArray(parsed) ? parsed : [parsed])
+      .map(item => ({
+        drive: String(item.DeviceID || '').toUpperCase(),
+        provider: String(item.ProviderName || '')
+      }))
+      .filter(item => /^[A-Z]:$/.test(item.drive));
+  } catch {
+    return [];
   }
-
-  return '';
 }
 
-async function mountNetworkShare(hostValue, password, mountPath = '') {
+function driveMatchesHosts(drive, hosts) {
+  const provider = drive.provider.toLocaleLowerCase();
+  return hosts.some(host => {
+    const normalized = String(host || '').toLocaleLowerCase();
+    return normalized && (
+      provider.includes(`\\\\${normalized}@${WEBDAV_PORT}\\`) ||
+      provider.includes(`http://${normalized}:${WEBDAV_PORT}`)
+    );
+  });
+}
+
+async function preferredWindowsMountHost(ipAddress, deviceName) {
+  const cleanName = String(deviceName || '').trim().replace(/\s+/g, '-');
+  const candidates = cleanName
+    ? cleanName.endsWith('.local')
+      ? [cleanName]
+      : [cleanName, `${cleanName}.local`]
+    : [];
+
+  for (const candidate of candidates) {
+    if (await isPortOpen(candidate, WEBDAV_PORT, 1000)) return candidate;
+  }
+  return ipAddress;
+}
+
+async function reuseWindowsWebDavDrive(hosts, preferredHost) {
+  const matches = (await listWindowsNetworkDrives())
+    .filter(drive => driveMatchesHosts(drive, hosts));
+  if (matches.length === 0) return '';
+
+  const preferred = matches.find(drive => driveMatchesHosts(drive, [preferredHost]));
+  if (!preferred) {
+    for (const oldMapping of matches) {
+      await runFile('net', ['use', oldMapping.drive, '/delete', '/y']).catch(() => {});
+    }
+    return '';
+  }
+
+  const keep = preferred;
+  const duplicates = matches.filter(item => item.drive !== keep.drive);
+  for (const duplicate of duplicates) {
+    await runFile('net', ['use', duplicate.drive, '/delete', '/y']).catch(() => {});
+  }
+  return keep.drive;
+}
+
+async function mountNetworkShare(hostValue, password, mountPath = '', deviceName = '') {
   const host = normalizeHost(hostValue);
   if (!host) throw new Error('需要有效的 IP 地址');
+  const mountHost = process.platform === 'win32'
+    ? await preferredWindowsMountHost(host, deviceName)
+    : host;
   const encodedPath = String(mountPath || '')
     .split('/')
     .filter(Boolean)
     .map(encodeURIComponent)
     .join('/');
-  const url = `http://${host}:${WEBDAV_PORT}/${encodedPath ? `${encodedPath}/` : ''}`;
+  const url = `http://${mountHost}:${WEBDAV_PORT}/${encodedPath ? `${encodedPath}/` : ''}`;
 
   if (process.platform === 'darwin') {
     const script = password
@@ -812,7 +867,8 @@ async function mountNetworkShare(hostValue, password, mountPath = '') {
   }
 
   if (process.platform === 'win32') {
-    const existingDrive = await findWindowsWebDavDrive(host);
+    const matchingHosts = [host, mountHost];
+    const existingDrive = await reuseWindowsWebDavDrive(matchingHosts, mountHost);
     if (existingDrive) {
       await runFile('explorer.exe', [`${existingDrive}\\`]).catch(() => {});
       return { url, mounted: true, drive: existingDrive, reused: true };
@@ -822,7 +878,8 @@ async function mountNetworkShare(hostValue, password, mountPath = '') {
     if (password) args.push('/user:share', password);
     args.push('/persistent:no');
     const output = await runFile('net', args, 30000);
-    const drive = output.match(/\b([A-Z]:)\b/i)?.[1] || await findWindowsWebDavDrive(host);
+    const drive = output.match(/\b([A-Z]:)\b/i)?.[1]
+      || await reuseWindowsWebDavDrive(matchingHosts, mountHost);
     if (drive) await runFile('explorer.exe', [`${drive}\\`]).catch(() => {});
     return { url, mounted: true, drive };
   }
@@ -938,7 +995,9 @@ ipcMain.handle('share:start', async (_event, folder) => startShareServer(folder)
 ipcMain.handle('share:stop', () => stopShareServer());
 ipcMain.handle('share:discover', () => discoverNetworkShares());
 ipcMain.handle('share:connect', (_event, host, password) => connectNetworkShare(host, password));
-ipcMain.handle('share:mount', (_event, host, password, mountPath) => mountNetworkShare(host, password, mountPath));
+ipcMain.handle('share:mount', (_event, host, password, mountPath, deviceName) => {
+  return mountNetworkShare(host, password, mountPath, deviceName);
+});
 ipcMain.handle('share:unmount', (_event, drive) => unmountNetworkShare(drive));
 ipcMain.handle('share:open', (_event, targetUrl) => shell.openExternal(targetUrl));
 

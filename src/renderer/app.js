@@ -59,7 +59,12 @@ function folderButton(label) {
 async function mountDevice(device) {
   networkStatus.textContent = `正在挂载 ${device.name || device.host}...`;
   try {
-    const result = await window.deepseekDesktop.mountShare(device.host, device.password, device.webDavPath);
+    const result = await window.deepseekDesktop.mountShare(
+      device.host,
+      device.password,
+      device.webDavPath,
+      device.name
+    );
     device.mountedDrive = result.drive || '';
     renderNetworkDevices(state.devices);
     networkStatus.textContent = result.reused ? '已打开现有网络盘' : '已挂载到系统文件管理器';
