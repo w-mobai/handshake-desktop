@@ -23,12 +23,14 @@
       "package.json"
     ],
     "mac": {
+      "icon": "build/icon.png",
       "target": [
         "dmg"
       ],
       "category": "public.app-category.developer-tools"
     },
     "win": {
+      "icon": "build/icon.png",
       "target": [
         {
           "target": "nsis",
