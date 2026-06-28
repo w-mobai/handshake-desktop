@@ -82,7 +82,7 @@ function renderLocalShares() {
   setSharePassword.textContent = state.shareStatus?.passwordRequired ? '修改密码' : '设置密码';
   localStatus.textContent = state.shareStatus?.passwordRequired
     ? '已启用密码保护'
-    : '共享密码尚未设置';
+    : '未设置密码，局域网设备可直接连接';
   localStatus.classList.toggle('is-secure', Boolean(state.shareStatus?.passwordRequired));
   localShares.replaceChildren();
 
@@ -183,7 +183,7 @@ function renderNetworkDevices(devices) {
 
       button.className = 'pair-button';
       button.type = 'button';
-      button.textContent = device.passwordRequired ? '输入密码配对' : '打开共享';
+      button.textContent = device.passwordRequired ? '输入密码配对' : '直接连接';
       button.addEventListener('click', async () => {
         if (device.passwordRequired) {
           state.pairingDevice = device;

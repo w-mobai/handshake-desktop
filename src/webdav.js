@@ -19,20 +19,14 @@ function uniqueMountNames(folders, pathModule) {
 }
 
 export async function startWebDav({ folders, password, port, pathModule, deviceName }) {
-  if (!password || folders.length === 0) return null;
-
-  const userManager = new webdav.SimpleUserManager();
-  const user = userManager.addUser('share', password, false);
-  const privilegeManager = new webdav.SimplePathPrivilegeManager();
-  privilegeManager.setRights(user, '/', ['all']);
+  if (folders.length === 0) return null;
 
   const server = new webdav.WebDAVServer({
     hostname: '0.0.0.0',
     port,
-    requireAuthentification: true,
-    httpAuthentication: new webdav.HTTPDigestAuthentication(userManager, 'Handshake'),
-    privilegeManager,
-    serverName: 'Handshake'
+    requireAuthentification: Boolean(password),
+    serverName: 'Handshake',
+    ...(password ? authenticationOptions(password) : {})
   });
 
   const mountName = String(deviceName || 'Handshake').replace(/[\\/]/g, '-');
@@ -45,6 +39,11 @@ export async function startWebDav({ folders, password, port, pathModule, deviceN
       true
     );
   } else {
+    server.setFileSystemSync(
+      mountPath,
+      new webdav.VirtualFileSystem(),
+      true
+    );
     folders.forEach((folder, index) => {
       server.setFileSystemSync(
         `${mountPath}/${names[index]}`,
@@ -56,6 +55,17 @@ export async function startWebDav({ folders, password, port, pathModule, deviceN
 
   await server.startAsync(port);
   return { server, names, mountPath };
+}
+
+function authenticationOptions(password) {
+  const userManager = new webdav.SimpleUserManager();
+  const user = userManager.addUser('share', password, false);
+  const privilegeManager = new webdav.SimplePathPrivilegeManager();
+  privilegeManager.setRights(user, '/', ['all']);
+  return {
+    httpAuthentication: new webdav.HTTPDigestAuthentication(userManager, 'Handshake'),
+    privilegeManager
+  };
 }
 
 export async function stopWebDav(instance) {

@@ -400,7 +400,7 @@ async function handleShareRequest(req, res, root, config) {
       webDavPort: WEBDAV_PORT,
       webDavPath: webDavState?.mountPath || '',
       passwordRequired: Boolean(password),
-      webDavAvailable: Boolean(password)
+      webDavAvailable: Boolean(webDavState)
     });
     return;
   }
@@ -423,7 +423,7 @@ async function handleShareRequest(req, res, root, config) {
       webDavPort: WEBDAV_PORT,
       webDavPath: webDavState?.mountPath || '',
       passwordRequired: Boolean(password),
-      webDavAvailable: Boolean(password),
+      webDavAvailable: Boolean(webDavState),
       shares: publicShares()
     });
     return;
@@ -770,7 +770,7 @@ function appleScriptString(value) {
 
 async function mountNetworkShare(hostValue, password, mountPath = '') {
   const host = normalizeHost(hostValue);
-  if (!host || !password) throw new Error('需要 IP 地址和共享密码');
+  if (!host) throw new Error('需要有效的 IP 地址');
   const encodedPath = String(mountPath || '')
     .split('/')
     .filter(Boolean)
@@ -779,25 +779,23 @@ async function mountNetworkShare(hostValue, password, mountPath = '') {
   const url = `http://${host}:${WEBDAV_PORT}/${encodedPath ? `${encodedPath}/` : ''}`;
 
   if (process.platform === 'darwin') {
-    const script = [
-      `mount volume "${appleScriptString(url)}"`,
-      'as user name "share"',
-      `with password "${appleScriptString(password)}"`
-    ].join(' ');
+    const script = password
+      ? [
+          `mount volume "${appleScriptString(url)}"`,
+          'as user name "share"',
+          `with password "${appleScriptString(password)}"`
+        ].join(' ')
+      : `mount volume "${appleScriptString(url)}"`;
     await runFile('osascript', ['-e', script], 30000);
     await runFile('open', ['/Volumes']).catch(() => {});
     return { url, mounted: true };
   }
 
   if (process.platform === 'win32') {
-    const output = await runFile('net', [
-      'use',
-      '*',
-      url,
-      '/user:share',
-      password,
-      '/persistent:yes'
-    ], 30000);
+    const args = ['use', '*', url];
+    if (password) args.push('/user:share', password);
+    args.push('/persistent:yes');
+    const output = await runFile('net', args, 30000);
     const drive = output.match(/\b([A-Z]:)\b/i)?.[1];
     if (drive) await runFile('explorer.exe', [`${drive}\\`]).catch(() => {});
     return { url, mounted: true, drive };
